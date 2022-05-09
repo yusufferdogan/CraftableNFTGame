@@ -25,7 +25,7 @@ contract CraftableNFTGame is ERC721, ERC721Enumerable, ERC721Burnable, Ownable {
     IERC20 private immutable craftToken;
     using Counters for Counters.Counter;
     Counters.Counter internal tokenIds;
-    string private baseUri = "https://";
+    string private baseUri = "https://res.cloudinary.com/dppuk5nbp/image/upload/v1652010540/";
     address payable internal addressOfThisContract;
     mapping(uint256 => Card) public cardData;
 
@@ -58,7 +58,7 @@ contract CraftableNFTGame is ERC721, ERC721Enumerable, ERC721Burnable, Ownable {
         uint256 newNftTokenId = tokenIds.current();
 
         Card memory newCard;
-        newCard.cardId = totalSupply() % 4;
+        newCard.cardId = (totalSupply() % 4) + 1;
         newCard.weight = 1;
 
         cardData[newNftTokenId] = newCard;
@@ -82,6 +82,41 @@ contract CraftableNFTGame is ERC721, ERC721Enumerable, ERC721Burnable, Ownable {
 
         uint256 allowance = craftToken.allowance(_msgSender(), addressOfThisContract);
         require(allowance >= mergeCost, "Approval needed for this address");
+
+        tokenIds.increment();
+        uint256 newNftTokenId = tokenIds.current();
+
+        Card memory newCard;
+        newCard.cardId = getCraftedCardType(tokenId1, tokenId2);
+        newCard.weight = card1.weight + card2.weight;
+
+        cardData[newNftTokenId] = newCard;
+
+        _burn(tokenId1);
+        _burn(tokenId2);
+        _mint(_msgSender(), newNftTokenId);
+    }
+
+    function getCraftedCardType(uint256 tokenId1, uint256 tokenId2) public pure returns (uint256) {
+        uint256 min = Math.min(tokenId1, tokenId2);
+        uint256 max = Math.max(tokenId1, tokenId2);
+        if (min == 1 && max == 2) {
+            return 6;
+        } else if (min == 1 && max == 3) {
+            return 9;
+        } else if (min == 1 && max == 4) {
+            return 11;
+        } else if (min == 2 && max == 2) {
+            return 5;
+        } else if (min == 2 && max == 4) {
+            return 7;
+        } else if (min == 3 && max == 4) {
+            return 10;
+        } else if (min == 4 && max == 4) {
+            return 8;
+        } else {
+            revert("invalid craft");
+        }
     }
 
     function _getMergeCost(uint256 weight) private pure returns (uint256) {
